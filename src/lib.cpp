@@ -122,3 +122,76 @@ void print_board(const size_t cols, const size_t char_capacity, const size_t use
     bit_iterator += 3;
   }
 }
+
+size_t delete_row(unsigned char* board, size_t& rows, size_t used_tokens, const size_t cols, const unsigned char selected_row) {
+  
+  const size_t token_limit = used_tokens - (selected_row*cols);
+  size_t token_counter = 0;
+  
+  --rows;
+  
+  size_t  start_bit  = selected_row*cols*token_size,
+          start_char = start_bit/8,
+          end_bit    = (selected_row+1)*cols*token_size, 
+          end_char   = end_bit/8;
+
+  unsigned char start_bit_iterator = start_bit%8,
+                end_bit_iterator   = end_bit%8,
+
+                end_token = 0;
+
+  while (token_counter < token_limit) {
+
+    end_token = (board[end_char] & (and_mask >> end_bit_iterator)) << end_bit_iterator;
+    
+    end_bit_iterator += 3;
+    if (end_bit_iterator >= 8) {
+      ++end_char;
+      end_bit_iterator -= 8;
+      if (end_bit_iterator > 0) {
+        end_token ^= (board[end_char] & (and_mask << (token_size-end_bit_iterator))) >> (token_size-end_bit_iterator);
+      }
+    } 
+
+    board[start_char] &= ~(and_mask >> start_bit_iterator);
+    board[start_char] ^= (end_token >> start_bit_iterator);
+
+    start_bit_iterator += 3;
+
+    if (start_bit_iterator >= 8) {
+      ++start_char;
+      start_bit_iterator -= 8;
+      if (start_bit_iterator > 0) {
+        board[start_char] &= ~(and_mask << (token_size-start_bit_iterator));
+        board[start_char] ^= end_token << (token_size-start_bit_iterator);
+        ++token_counter;
+      }
+      else ++token_counter;
+    }
+    else ++token_counter;
+  }
+
+  return rows*cols;
+}
+
+/*
+size_t delete_column(unsigned char* board, size_t& cols, const size_t rows, size_t used_tokens, const unsigned char selected_col) {
+
+}
+
+//a la creacion inicial del tablero, se tiene que crear y despues modificar hasta que ya no quede ningun combo de fichas, esa primera funcion de sensado debe de estar
+//incorporada en una funcion grande que contenga combo_scanner y create_board hasta que quede uno valido
+
+bool combo_scanner() {
+  //solo para las fichas que tienen posibilidades de haberse alterado de forma en que generen un combo 
+}
+
+void swap_upper() {
+  
+}
+
+void cascaded_fall() {
+
+}
+
+*/
