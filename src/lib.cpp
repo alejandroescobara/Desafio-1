@@ -21,13 +21,11 @@ constexpr unsigned char token_masks[] = {  0b0,   0b00100000,   0b01000000,  0b0
 
 constexpr unsigned char and_mask = 0b11100000, invalid = 0b00000111;
 
-
+static std::random_device rd;
+static std::mt19937 gen(rd());
 
 void create_board(const size_t char_capacity, const size_t used_tokens, unsigned char* board) {
   
-  //generacion de motor random
-  static std::random_device rd;
-  static std::mt19937 gen(rd());
   std::uniform_int_distribution<size_t> dist(0, 5);
 
   //se llenan todos los bytes de tokens invalidos
@@ -123,9 +121,9 @@ void print_board(const size_t cols, const size_t char_capacity, const size_t use
   }
 }
 
-size_t delete_row(unsigned char* board, size_t& rows, size_t used_tokens, const size_t cols, const unsigned char selected_row) {
+size_t delete_row(unsigned char* board, size_t& rows, const size_t cols, const unsigned char selected_row) {
   
-  const size_t token_limit = used_tokens - (selected_row*cols);
+  const size_t token_limit = (rows*cols) - (selected_row*cols);
   size_t token_counter = 0;
   
   --rows;
@@ -174,24 +172,74 @@ size_t delete_row(unsigned char* board, size_t& rows, size_t used_tokens, const 
   return rows*cols;
 }
 
-/*
-size_t delete_column(unsigned char* board, size_t& cols, const size_t rows, size_t used_tokens, const unsigned char selected_col) {
+//size_t delete_column(unsigned char* board, size_t& cols, const size_t rows, size_t used_to, const unsigned char selected_col) {}
 
+size_t upper_replace(unsigned char* board, const size_t cols, size_t initial_bit) {
+  size_t initial_byte = initial_bit/8,
+         upper_bit    = initial_bit - (cols*token_size),
+         next_bit     = upper_bit/8,
+         upper_byte   = upper_bit/8;
+
+  initial_bit %= 8;
+  upper_bit %= 8;
+
+  unsigned char upper_token = (board[upper_byte] & (and_mask >> upper_bit)) << upper_bit;
+  if (upper_bit > 5) {
+    ++upper_byte;
+    upper_bit -= 5;
+    upper_token ^= (board[upper_byte] & (and_mask << (token_size-upper_bit) )) >> (token_size-upper_bit);
+  }
+
+  board[initial_byte] &= ~(and_mask >> initial_bit);
+  board[initial_byte] ^= upper_token >> initial_bit;
+
+  if (initial_bit > 5) {
+    ++initial_byte;
+    initial_bit -= 5;
+    board[initial_byte] &= ~(and_mask << (token_size-initial_bit));
+    board[initial_byte] ^= upper_token << (token_size-initial_bit);
+  }
+  return next_bit;
 }
 
+void cascaded_fall(unsigned char* board, const size_t cols, size_t bit_index) {
+
+  std::uniform_int_distribution<size_t> dist(0, 5);
+
+  size_t first_row_bits = (cols*token_size);
+  
+  while (bit_index > first_row_bits) {
+    bit_index = upper_replace(board, cols, bit_index);
+  }
+
+  size_t last_byte = bit_index/8;
+  bit_index %= 8;
+
+  unsigned char last_token = token_masks[dist(gen)];
+
+  board[last_byte] &= ~(and_mask >> bit_index);
+  board[last_byte] ^= ( last_token >> bit_index);
+
+  if (bit_index > 5) {
+    ++last_byte;
+    bit_index -= 5;
+    board[last_byte] &= ~(and_mask << (token_size-bit_index));
+    board[last_byte] ^= last_token << (token_size-bit_index);
+  } 
+}
+
+bool combo_scanner(unsigned char* board, const size_t cols, size_t bit_index) {
+  
+}
+
+void create_valid_board() {
+
+}
+/*
 //a la creacion inicial del tablero, se tiene que crear y despues modificar hasta que ya no quede ningun combo de fichas, esa primera funcion de sensado debe de estar
 //incorporada en una funcion grande que contenga combo_scanner y create_board hasta que quede uno valido
 
 bool combo_scanner() {
   //solo para las fichas que tienen posibilidades de haberse alterado de forma en que generen un combo 
 }
-
-void swap_upper() {
-  
-}
-
-void cascaded_fall() {
-
-}
-
 */
