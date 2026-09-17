@@ -1,50 +1,14 @@
 #include "lib.hpp"
 #include "utilities.hpp"
-#include "menu.hpp"
 
 #include <iostream>
 
-//funciones a realizar:
-//
-//funcion de sensado hacia arriba (reconocimiento de combos desde donde se elimino la ficha) 
-//
-//funcion de reemplazo de ficha con la ficha de arriba
-//
-//funcion de redimensionalizacion de matriz (empequeñecer)
-//
-//funcion de fila invalida
-//
-//funcion de columna invalida
-//
-//funcion de eliminar ficha
-//
-//funcion de fila random
-//
-//funcion de columna random
-//
-//BONUS
-//
-//aviso de colapso de monitor size
-//
-//buscar la forma de que si se elimino una fila o columna con anterioridad, se pueda reutilizar ese espacio si se llega a agregar una fila o columna en el futuro (funcion de comprobacion de filas o columnas invalidas, si hay, reacomodacion, si no hay, nueva reserva de memoria)
-//
-//aviso de colapso monitor size o que la matriz baje de ser 3x3
-//
-//utilizar archivo para guardar puntuaciones record
-//
-//implementar la opcion "mover ficha"
-
-
-
 constexpr short token_size = 3, option_limit = 2;
-
-
-
 
 int main() {
   while (true) {
     clear_console();
-    //print_menu();
+    //print_title();
 
     size_t rows, columns;
 
