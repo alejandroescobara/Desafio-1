@@ -1,6 +1,8 @@
 #include "lib.hpp"
 #include "utilities.hpp"
 
+#include <ctime>
+
 //#include <bitset>
 //std::cout << std::bitset<8>(token) << std::endl;
 
@@ -75,7 +77,14 @@ void print_board(const size_t cols, const size_t char_capacity, const size_t use
 
   unsigned char bit_iterator = 0, token = 0;
   size_t char_index = 0, token_iterator = 0;
-  std::cout << "\n";
+  std::cout << "\n ";
+  for (size_t i = 0; i < cols; ++i) {
+    std::cout << ' '<< i;
+    if (i < 10) std::cout << ' '; 
+  }
+  std::cout << " X\n\n ";
+  
+  size_t row_counter = 0; 
   while (token_iterator < used_tokens) {
     if (bit_iterator >= 8) {
       ++char_index;
@@ -85,7 +94,10 @@ void print_board(const size_t cols, const size_t char_capacity, const size_t use
         print_token(token);
         token = 0;
         ++token_iterator;
-        if (token_iterator % cols == 0) std::cout << "\n\n";
+        if (token_iterator % cols == 0) {
+          std::cout << ' ' << row_counter << "\n\n ";
+          ++row_counter;
+        }
       }
     }
     if (token_iterator < used_tokens) {
@@ -95,21 +107,34 @@ void print_board(const size_t cols, const size_t char_capacity, const size_t use
         print_token(token);
         token = 0;
         ++token_iterator;
-        if (token_iterator % cols == 0) std::cout << "\n\n";
+        if (token_iterator % cols == 0) {
+          std::cout << ' ' << row_counter << "\n\n ";
+          ++row_counter;
+        }
       }
     }
     bit_iterator += 3;
   }
 }
 
+
 //debugging pendiente [FALTA VALIDACION DE TAMAÑO PARA EMPEQUEÑECER, PARAMETRO DE CAPACIDAD]
-size_t delete_row(unsigned char* board, size_t& rows, const size_t cols, const unsigned char selected_row) {
+size_t delete_row(unsigned char*& board, size_t& rows, const size_t cols, const unsigned char selected_row, size_t& byte_capacity) {
   
+  //  El flujo del algoritmo es: 
+  //  Se encuentra la distancia entre una fila y la otra, a partir de esa distancia, nos ubicamos en dos posiciones diferentes:
+  //  start_bit & start_char corresponden al punto que va a ser sobreescribido
+  //  end_bit & end_char corresponden al punto que va a ser leido y pegado en la posicion inicial
+  //  
+  //  el algoritmo termina en el momento en el que la posicion board[end_char] + end_bit corresponda al indice de la ultima ficha 
+  //  del tablero
+
   const size_t token_limit = (rows*cols) - (selected_row*cols);
   size_t token_counter = 0;
   
   --rows;
-  
+  size_t new_used_tokens = rows*cols;
+
   size_t  start_bit  = selected_row*cols*token_size,
           start_char = start_bit/8,
           end_bit    = (selected_row+1)*cols*token_size, 
@@ -122,6 +147,8 @@ size_t delete_row(unsigned char* board, size_t& rows, const size_t cols, const u
 
   while (token_counter < token_limit) {
 
+    //proceso de extraccion del token final
+
     end_token = (board[end_char] & (and_mask >> end_bit_iterator)) << end_bit_iterator;
     
     end_bit_iterator += 3;
@@ -132,6 +159,8 @@ size_t delete_row(unsigned char* board, size_t& rows, const size_t cols, const u
         end_token ^= (board[end_char] & (and_mask << (token_size-end_bit_iterator))) >> (token_size-end_bit_iterator);
       }
     } 
+
+    //proceso de sobreescritura del token inicial
 
     board[start_char] &= ~(and_mask >> start_bit_iterator);
     board[start_char] ^= (end_token >> start_bit_iterator);
@@ -150,16 +179,118 @@ size_t delete_row(unsigned char* board, size_t& rows, const size_t cols, const u
     }
     else ++token_counter;
   }
+  
+  size_t new_byte_capacity = (( (rows*cols*token_size) + 7)/8);
 
-  return rows*cols;
+  if (new_used_tokens <= byte_capacity*0.65) { 
+    byte_capacity = new_byte_capacity;
+    resize_cchain(board, new_byte_capacity, byte_capacity);
+  }
+
+  return new_used_tokens;
 }
 
+size_t calcularbytesnecesarios(size_t filas, size_t columnas){
+    size_t bitstotales = filas * columnas * 3;
+    size_t bytesnecesarios = bitstotales / 8;
+    if (bitstotales % 8 != 0) {
+        bytesnecesarios = bytesnecesarios + 1;   // redondeamos hacia arriba si sobran bits
+    }
+    return bytesnecesarios;
+}
+
+
+unsigned char ver_ficha(unsigned char* tablero, size_t fila, size_t columna, size_t columnas){
+
+    size_t index = fila * columnas + columna; //el index me dice que ficha es 0,1,2,3,4,5
+    size_t firstbit = index * 3; //me indica la posicion lineal del bit en el que inicia la ficha
+    size_t Byte = firstbit / 8;  //este me dice el byte en el que esta
+    size_t posicionenelbyte = firstbit % 8; //este me dice la posicion en el byte en el que esta la ficha
+
+    if (posicionenelbyte <= 5) //cuando la ficha esta en un solo byte
+    {
+        size_t desplazamiento = 8 - posicionenelbyte - 3; //8 es la cantidad de bits en un byte, cuando hago (8 - posicionenelbyte) obtengo el bit menos significativo y cuando resto 3 se obtiene el mas, (todo esto de derecha a izquierda)
+        return (tablero[Byte] >> desplazamiento) & 7; //aqui solo basta con mover el bit más a la derecha de la ficha al bit menos significativo de el byte
+    }
+
+    else //esta se ocupa para cuando una ficha esta de 2 bytes
+    {
+        size_t desplazamiento = 16 - posicionenelbyte - 3; //16 es el numero de bits en 2 bytes,
+        unsigned short entre2bytes = (tablero[Byte] << 8) | (tablero[Byte+1]); //conectamos los 2 bytes para que queden de una forma lineal
+        return (entre2bytes >> desplazamiento) & 7; //el >> desplazamiento mueve la ficha hasta el bit menos significativo de los 16 bits ya sabemos que la ficha esta ahi entonces aplicamos un and 7 (00000111 en 2 bytes)
+    }
+}
+
+
+void colocarfichaindividual(unsigned char* tablero, size_t fila, size_t columna, size_t columnas, unsigned short valor){
+
+    size_t index = fila * columnas + columna; //el index me dice que ficha es 0,1,2,3,4,5
+    size_t firstbit = index * 3; //me indica la posicion lineal del bit en el que inicia la ficha
+    size_t Byte = firstbit / 8;  //este me dice el byte en el que esta
+    size_t posicionenelbyte = firstbit % 8; //este me dice la posicion en el byte en el que esta la ficha
+
+    if (posicionenelbyte <= 5) //cuando la ficha esta en un solo byte
+    {
+        size_t desplazamiento = (8 - posicionenelbyte - 3);//8 es la cantidad de bits en un byte, cuando hago (8 - posicionenelbyte) obtengo el bit menos significativo y cuando resto 3 se obtiene el mas, (todo esto de derecha a izquierda)
+        unsigned char mascara = 7 << desplazamiento; // coloco la mascara justo en los bits a cambiar
+        tablero[Byte] = (tablero[Byte] & ~mascara) | (valor << desplazamiento); //aqui solo basta con mover el bit más a la derecha de la ficha al bit menos significativo de el byte
+    }
+
+    else //esta se ocupa para cuando una ficha esta de 2 bytes
+    {
+        size_t desplazamiento = 16 - posicionenelbyte - 3; //16 es el numero de bits en 2 bytes,
+        unsigned short entre2bytes = (tablero[Byte] << 8) | (tablero[Byte+1]); //conectamos los 2 bytes para que queden de una forma lineal
+        unsigned short mascara = 7 << desplazamiento; // creo la mascara para apagar todos los bits de la posicion donde ira la ficha
+        entre2bytes = (entre2bytes & ~mascara);//(valor << desplazamiento) mueve el valor a cambiar al bit más significativo de la ficha a reemplazar
+        valor = valor << desplazamiento; //movemos la ficha a la posicion de bit más significativo de la ficha que vamos a cambiar
+        entre2bytes = entre2bytes | valor; //prendemos los valores de la ficha mediante un or
+        tablero[Byte] = (entre2bytes >> 8);
+        tablero[Byte+1] = entre2bytes;
+    }
+}
+void eliminarcolumna(unsigned char*& tablero, size_t filas, size_t& columnas, size_t columna_eliminar, size_t& bytesreservados){
+    size_t newcolumns = columnas - 1;
+
+    for (size_t fila = 0; fila < filas; fila++){
+        size_t columnaDestino = 0;
+        for (size_t columna = 0; columna < columnas; columna++){
+            if (columna == columna_eliminar){
+                continue;
+            }
+            unsigned char ficha_No_eliminada = ver_ficha(tablero, fila, columna, columnas);
+            colocarfichaindividual(tablero, fila, columnaDestino, newcolumns, ficha_No_eliminada);
+            columnaDestino++;
+        }
+
+        colocarfichaindividual(tablero, fila, columnas - 1, columnas, 6);
+    }
+
+    columnas = newcolumns;
+
+    size_t bytesnecesariosnewtable = calcularbytesnecesarios(filas, newcolumns);
+    double porcentajeactual = static_cast<double>(bytesnecesariosnewtable) / bytesreservados;
+
+    if (porcentajeactual < 0.65){
+        unsigned char* tableronuevo = new unsigned char[bytesnecesariosnewtable];
+        create_board(bytesnecesariosnewtable, filas * newcolumns, tableronuevo);
+
+        for (size_t fila = 0; fila < filas; fila++){
+            for (size_t columna = 0; columna < newcolumns; columna++){
+                unsigned char fichaoldtable = ver_ficha(tablero, fila, columna, columnas);
+                colocarfichaindividual(tableronuevo, fila, columna, columnas, fichaoldtable);
+            }
+        }
+        delete[] tablero;
+        tablero = tableronuevo;
+        bytesreservados = bytesnecesariosnewtable;
+    }
+}
+
+/*
 //size_t delete_column(unsigned char* board, size_t& cols, const size_t rows, size_t used_to, const unsigned char selected_col) {}
 
 //############################ PABLO ##########################################################
 
-#include <iostream>
-#include <cstdlib>
 #include <ctime>
 
 using namespace std;
@@ -233,7 +364,7 @@ unsigned char ver_ficha(unsigned char* tablero, int fila, int columna, int colum
 
 
 
-/* Aqui estan ubicadas las funciones de eliminacion de filas y columna, en el futuro tambien estaran las de agregar filas y columnas*/
+//Aqui estan ubicadas las funciones de eliminacion de filas y columna, en el futuro tambien estaran las de agregar filas y columnas
 
 void colocarfichaindividual(unsigned char* tablero, int fila, int columna, int columnas, unsigned short valor){
 
@@ -447,6 +578,8 @@ void cascaded_fall(unsigned char* board, const size_t cols, size_t bit_index) {
   //                termine la fila
   //                si el combo_size es menor a 3, se devuelve 0, si no, se devuelve combo size
 
+
+
 size_t horizontal_scanner(const unsigned char* board,
                           const size_t cols,
                           const size_t rows,
@@ -564,3 +697,4 @@ void create_valid_board() {
 //a la creacion inicial del tablero, se tiene que crear y despues modificar hasta que ya no quede ningun combo de fichas, esa primera funcion de sensado debe de estar
 //incorporada en una funcion grande que contenga combo_scanner y create_board hasta que quede uno valido
 
+*/

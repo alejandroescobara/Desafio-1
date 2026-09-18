@@ -17,26 +17,20 @@ void wait_enter() {
   std::cin.get();
 }
 
-size_t expand_cchain(unsigned char*& c_chain, size_t capacity, const size_t size_chain) {
-  capacity *= 2;
-  unsigned char* array_aux = new (std::nothrow) unsigned char[capacity];
-  if (invalid_memory_reservation(array_aux)) {
+void resize_cchain(unsigned char*& c_chain, const size_t new_capacity, const size_t bytes_to_copy) {
+    unsigned char* array_aux = new (std::nothrow) unsigned char[new_capacity];
+    if (invalid_memory_reservation(array_aux)) return;
+
+    // Copiar solo hasta el límite seguro (el menor entre lo nuevo y lo viejo)
+    size_t limit = (bytes_to_copy < new_capacity) ? bytes_to_copy : new_capacity;
+
+    for (size_t index = 0; index < limit; ++index) {
+        array_aux[index] = c_chain[index];
+    }
+
     delete[] c_chain;
-    return 0;
-  }
-  for (size_t index = 0; index < size_chain; ++index) array_aux[index] = c_chain[index];
-  
-  delete[] c_chain;
-  c_chain = array_aux;
-  return capacity;
+    c_chain = array_aux;
 }
-/*
-size_t shrink_cchain(unsigned char*& c_chain, size_t capacity, const size_t initial_size) {
-  capacity = (capacity*0.70) + 1;
-  unsigned char* array_aux = new (std::nothrow) unsigned char[capacity];
-    if (invalid_memory_reservation(array_aux)) {
-    delete[] c_chain;
-    return 0;
-  }
-}
-*/
+
+
+

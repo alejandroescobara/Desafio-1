@@ -8,8 +8,6 @@ void clear_console();
 
 void wait_enter();
 
-size_t expand_cchain(unsigned char*&, size_t, size_t);
-
 template <typename T>
 requires std::is_pointer_v<T>
 bool invalid_memory_reservation(T ptr) {
@@ -31,3 +29,5 @@ bool invalid_input(T& variable) {
   }
   return false;
 }
+
+void resize_cchain(unsigned char*&, const size_t, const size_t);

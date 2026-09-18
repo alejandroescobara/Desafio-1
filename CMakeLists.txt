@@ -9,11 +9,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_executable(Desafio1
     src/main.cpp
     src/lib.cpp
-    src/menu.cpp
     src/utilities.cpp
 
     include/lib.hpp
-    include/menu.hpp
     include/utilities.hpp
 )
 

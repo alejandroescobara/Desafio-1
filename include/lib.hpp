@@ -15,6 +15,8 @@
 
 constexpr short token_size = 3;
 
+constexpr short option_limit = 5;
+
 constexpr const char *token1 = "₪", *token2 = "▲", *token3 = "☻", *token4 = "☼", *token5 = "♫", *token6 = "♦"; //   INVALID
 //bit representation:          000            001            010            011            100            101         111
 
@@ -27,17 +29,22 @@ static std::random_device rd;
 static std::mt19937 gen(rd());
 
 inline void print_title() {
-  std::cout << "WELCOME TO " << RED BOLD     << 'S' << RESET
-                             << GREEN BOLD   << 'W' << RESET
-                             << YELLOW BOLD  << 'E' << RESET 
-                             << BLUE BOLD    << 'E' << RESET
-                             << CYAN BOLD    << 'T' << RESET
-                             << ' '
-                             << MAGENTA BOLD << 'C' << RESET 
-                             << RED BOLD     << 'R' << RESET
-                             << GREEN BOLD   << 'U' << RESET
-                             << YELLOW BOLD  << 'S' << RESET 
-                             << BLUE BOLD    << 'H' << RESET;
+  std::cout << "  WELCOME TO\n|" << RED BOLD     << 'S' << RESET
+                                 << GREEN BOLD   << 'W' << RESET
+                                 << YELLOW BOLD  << 'E' << RESET 
+                                 << BLUE BOLD    << 'E' << RESET
+                                 << CYAN BOLD    << 'T' << RESET
+                                 << ' '
+                                 << MAGENTA BOLD << 'C' << RESET 
+                                 << RED BOLD     << 'R' << RESET
+                                 << GREEN BOLD   << 'U' << RESET
+                                 << YELLOW BOLD  << 'S' << RESET 
+                                 << BLUE BOLD    << 'H' << RESET
+                                 << "|\n\n\n";
+}
+
+inline void print_options() {
+  std::cout << "| 1. DELETE TOKEN | 2. DELETE ROW | 3. DELETE COLUMN | 4. ADD ROW | 5. ADD COLUMN |\n\n";
 }
 
 
@@ -68,9 +75,17 @@ void create_board(const size_t, const size_t, unsigned char*);
 
 void print_board(const size_t, const size_t, const size_t, const unsigned char*);
 
-size_t delete_row(unsigned char*, size_t&, size_t, const size_t, const unsigned char);
+size_t delete_row(unsigned char*& board, size_t&, const size_t, const unsigned char, size_t& );
 
-size_t delete_row(unsigned char* board, size_t&, const size_t, const unsigned char);
+
+size_t calcularbytesnecesarios(size_t, size_t);
+
+unsigned char ver_ficha(unsigned char*, size_t, size_t, size_t);
+
+void colocarfichaindividual(unsigned char*, size_t, size_t, size_t, unsigned short);
+
+void eliminarcolumna(unsigned char*&, size_t, size_t&, size_t, size_t&);
+
 
 size_t upper_replace(unsigned char*, const size_t, size_t);
 
