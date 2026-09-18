@@ -73,6 +73,32 @@ void print_token(unsigned char token) {
   }
 }
 
+void print_bit_token(unsigned char token) {
+  switch(token) {
+    case 0b0:
+      std::cout << RED BOLD << ' ' << "000" << ' ' << RESET;
+      break;
+    case 0b1:
+      std::cout << GREEN BOLD << ' ' << "001" << ' ' << RESET;
+      break;
+    case 0b10:
+      std::cout << YELLOW BOLD << ' ' << "010" << ' ' << RESET;
+      break;
+    case 0b11:
+      std::cout << BLUE BOLD << ' ' << "011" << ' ' << RESET;
+      break;
+    case 0b100:
+      std::cout << MAGENTA BOLD << ' ' << "100" << ' ' << RESET;
+      break;
+    case 0b101:
+      std::cout << CYAN BOLD << ' ' << "101" << ' ' << RESET;
+      break;
+    default:
+      std::cout << " E ";
+      break;
+  }
+}
+
 void print_board(const size_t cols, const size_t char_capacity, const size_t used_tokens, const unsigned char* board) {
 
   unsigned char bit_iterator = 0, token = 0;
@@ -118,6 +144,47 @@ void print_board(const size_t cols, const size_t char_capacity, const size_t use
 }
 
 
+void print_bit_board(const size_t cols, const size_t char_capacity, const size_t used_tokens, const unsigned char* board) {
+
+  unsigned char bit_iterator = 0, token = 0;
+  size_t char_index = 0, token_iterator = 0;
+  std::cout << "\n ";
+  for (size_t i = 0; i < cols; ++i) std::cout << ' '<< i << "  ";
+  std::cout << " X\n\n ";
+  
+  size_t row_counter = 0; 
+  while (token_iterator < used_tokens) {
+    if (bit_iterator >= 8) {
+      ++char_index;
+      bit_iterator -= 8;
+      if (bit_iterator > 0) {
+        token ^= (board[char_index] & (and_mask << (token_size-bit_iterator))) >> (8-bit_iterator);
+        print_bit_token(token);
+        token = 0;
+        ++token_iterator;
+        if (token_iterator % cols == 0) {
+          std::cout << ' ' << row_counter << "\n\n\n ";
+          ++row_counter;
+        }
+      }
+    }
+
+    if (token_iterator < used_tokens) {
+      token = board[char_index] & (and_mask >> bit_iterator);
+      token = ((5-bit_iterator < 0)? token << (bit_iterator-5) : token >> (5-bit_iterator));
+      if (bit_iterator <= 5) {
+        print_bit_token(token);
+        token = 0;
+        ++token_iterator;
+        if (token_iterator % cols == 0) {
+          std::cout << ' ' << row_counter << "\n\n\n ";
+          ++row_counter;
+        }
+      }
+    }
+    bit_iterator += 3;
+  }
+}
 //debugging pendiente [FALTA VALIDACION DE TAMAÑO PARA EMPEQUEÑECER, PARAMETRO DE CAPACIDAD]
 size_t delete_row(unsigned char*& board, size_t& rows, const size_t cols, const unsigned char selected_row, size_t& byte_capacity) {
   
@@ -248,6 +315,7 @@ void colocarfichaindividual(unsigned char* tablero, size_t fila, size_t columna,
         tablero[Byte+1] = entre2bytes;
     }
 }
+
 void eliminarcolumna(unsigned char*& tablero, size_t filas, size_t& columnas, size_t columna_eliminar, size_t& bytesreservados){
     size_t newcolumns = columnas - 1;
 
@@ -286,24 +354,58 @@ void eliminarcolumna(unsigned char*& tablero, size_t filas, size_t& columnas, si
     }
 }
 
-/*
-//size_t delete_column(unsigned char* board, size_t& cols, const size_t rows, size_t used_to, const unsigned char selected_col) {}
+size_t upper_replace(unsigned char* board, const size_t cols, size_t initial_bit) {
+  size_t initial_byte = initial_bit/8,
+         upper_bit    = initial_bit - (cols*token_size),
+         next_bit     = upper_bit,
+         upper_byte   = upper_bit/8;
 
-//############################ PABLO ##########################################################
+  initial_bit %= 8;
+  upper_bit %= 8;
 
-#include <ctime>
+  unsigned char upper_token = (board[upper_byte] & (and_mask >> upper_bit)) << upper_bit;
+  if (upper_bit > 5) {
+    ++upper_byte;
+    upper_bit -= 5;
+    upper_token ^= (board[upper_byte] & (and_mask << (token_size-upper_bit) )) >> (token_size-upper_bit);
+  }
 
-using namespace std;
+  board[initial_byte] &= ~(and_mask >> initial_bit);
+  board[initial_byte] ^= upper_token >> initial_bit;
 
-//estas funciones arman el tablero
+  if (initial_bit > 5) {
+    ++initial_byte;
+    initial_bit -= 5;
+    board[initial_byte] &= ~(and_mask << (token_size-initial_bit));
+    board[initial_byte] ^= upper_token << (token_size-initial_bit);
+  }
+  return next_bit;
+}
 
-int calcularbytesnecesarios(int filas, int columnas){
-    int bitstotales = filas * columnas * 3;
-    int bytesnecesarios = bitstotales / 8;
-    if (bitstotales % 8 != 0) {
-        bytesnecesarios = bytesnecesarios + 1;   // redondeamos hacia arriba si sobran bits
-    }
-    return bytesnecesarios;
+void cascaded_fall(unsigned char* board, const size_t cols, size_t bit_index) {
+
+  std::uniform_int_distribution<size_t> dist(0, 5);
+
+  size_t first_row_bits = (cols*token_size);
+  
+  while (bit_index >= first_row_bits) {
+    bit_index = upper_replace(board, cols, bit_index);
+  }
+
+  size_t last_byte = bit_index/8;
+  bit_index %= 8;
+
+  unsigned char last_token = token_masks[dist(gen)];
+
+  board[last_byte] &= ~(and_mask >> bit_index);
+  board[last_byte] ^= ( last_token >> bit_index);
+
+  if (bit_index > 5) {
+    ++last_byte;
+    bit_index -= 5;
+    board[last_byte] &= ~(and_mask << (token_size-bit_index));
+    board[last_byte] ^= last_token << (token_size-bit_index);
+  } 
 }
 
 unsigned char* creartablero(int filas, int columnas){
@@ -317,167 +419,21 @@ unsigned char* creartablero(int filas, int columnas){
     return tablero;
 }
 
-char simbolo_apartirdebits(unsigned char codebits) //codebits es cada una de las ficha en su forma de bits
-{
-    switch (codebits)
-    {
-    case 0: return 'Y';
-    case 1: return 'A';
-    case 2: return 'K';
-    case 3: return 'M';
-    case 4: return 'Q';
-    case 5: return 'R';
-    case 6: return '-';
-    case 7: return '*';
-    }
-}
-
-
-
 unsigned char llenarAleatorio(){
     return rand() % 5;
 }
 
+void agregarfila(unsigned char*& tablero, size_t &filas, size_t columnas, size_t posicionfilaadd, size_t& bytesreservados){
+    ++filas;
+    bytesreservados = (( (filas*columnas*3) + 7)/8);
 
+    unsigned char* tableronuevo = new unsigned char[bytesreservados];
 
-unsigned char ver_ficha(unsigned char* tablero, int fila, int columna, int columnas){
-
-    int index = fila * columnas + columna; //el index me dice que ficha es 0,1,2,3,4,5
-    int firstbit = index * 3; //me indica la posicion lineal del bit en el que inicia la ficha
-    int Byte = firstbit / 8;  //este me dice el byte en el que esta
-    int posicionenelbyte = firstbit % 8; //este me dice la posicion en el byte en el que esta la ficha
-
-    if (posicionenelbyte <= 5) //cuando la ficha esta en un solo byte
-    {
-        int desplazamiento = 8 - posicionenelbyte - 3; //8 es la cantidad de bits en un byte, cuando hago (8 - posicionenelbyte) obtengo el bit menos significativo y cuando resto 3 se obtiene el mas, (todo esto de derecha a izquierda)
-        return (tablero[Byte] >> desplazamiento) & 7; //aqui solo basta con mover el bit más a la derecha de la ficha al bit menos significativo de el byte
+    for (size_t i = 0;i < bytesreservados; i++){
+        tableronuevo[i] = 0; //cada byte es igual a 00000000 ya que lo inicializamos en 0 (vacio por asi decirlo)
     }
 
-    else //esta se ocupa para cuando una ficha esta de 2 bytes
-    {
-        int desplazamiento = 16 - posicionenelbyte - 3; //16 es el numero de bits en 2 bytes,
-        unsigned short entre2bytes = (tablero[Byte] << 8) | (tablero[Byte+1]); //conectamos los 2 bytes para que queden de una forma lineal
-        return (entre2bytes >> desplazamiento) & 7; //el >> desplazamiento mueve la ficha hasta el bit menos significativo de los 16 bits ya sabemos que la ficha esta ahi entonces aplicamos un and 7 (00000111 en 2 bytes)
-    }
-}
-
-
-
-
-//Aqui estan ubicadas las funciones de eliminacion de filas y columna, en el futuro tambien estaran las de agregar filas y columnas
-
-void colocarfichaindividual(unsigned char* tablero, int fila, int columna, int columnas, unsigned short valor){
-
-    int index = fila * columnas + columna; //el index me dice que ficha es 0,1,2,3,4,5
-    int firstbit = index * 3; //me indica la posicion lineal del bit en el que inicia la ficha
-    int Byte = firstbit / 8;  //este me dice el byte en el que esta
-    int posicionenelbyte = firstbit % 8; //este me dice la posicion en el byte en el que esta la ficha
-
-    if (posicionenelbyte <= 5) //cuando la ficha esta en un solo byte
-    {
-        int desplazamiento = (8 - posicionenelbyte - 3);//8 es la cantidad de bits en un byte, cuando hago (8 - posicionenelbyte) obtengo el bit menos significativo y cuando resto 3 se obtiene el mas, (todo esto de derecha a izquierda)
-        unsigned char mascara = 7 << desplazamiento; // coloco la mascara justo en los bits a cambiar
-        tablero[Byte] =(tablero[Byte] & ~mascara) | (valor << desplazamiento); //aqui solo basta con mover el bit más a la derecha de la ficha al bit menos significativo de el byte
-    }
-
-    else //esta se ocupa para cuando una ficha esta de 2 bytes
-    {
-        int desplazamiento = 16 - posicionenelbyte - 3; //16 es el numero de bits en 2 bytes,
-        unsigned short entre2bytes = (tablero[Byte] << 8) | (tablero[Byte+1]); //conectamos los 2 bytes para que queden de una forma lineal
-        unsigned short mascara = 7 << desplazamiento; // creo la mascara para apagar todos los bits de la posicion donde ira la ficha
-        entre2bytes = (entre2bytes & ~mascara);//(valor << desplazamiento) mueve el valor a cambiar al bit más significativo de la ficha a reemplazar
-        valor = valor << desplazamiento; //movemos la ficha a la posicion de bit más significativo de la ficha que vamos a cambiar
-        entre2bytes = entre2bytes | valor; //prendemos los valores de la ficha mediante un or
-        tablero[Byte] = (entre2bytes>>8);
-        tablero[Byte+1] = entre2bytes;
-    }
-
-}
-
-void eliminarfila(unsigned char*& tablero, int& filas, int columnas, int fila_eliminar, int& bytesreservados){
-    int newrows = filas - 1;
-    int filadestino = 0;
-
-    for (int fila = 0; fila < filas; fila++){
-        if (fila == fila_eliminar){
-            continue;
-        }
-        for (int columna = 0; columna < columnas; columna++){
-            unsigned char ficha_No_eliminada = ver_ficha(tablero, fila, columna, columnas);
-            colocarfichaindividual(tablero, filadestino, columna, columnas, ficha_No_eliminada);
-
-        }
-        filadestino ++;
-    }
-
-    for (int columna = 0; columna < columnas; columna++){
-        colocarfichaindividual(tablero, filas - 1, columna, columnas, 6);
-    }
-
-    filas = newrows;
-
-    int bytesnecesariosnewtable = calcularbytesnecesarios(newrows, columnas);
-    double porcentajeactual = bytesnecesariosnewtable/bytesreservados;
-
-    if (porcentajeactual < 0.65){
-        unsigned char* tableronuevo = creartablero(filas, columnas);
-
-        for (int fila = 0; fila < filas; fila++){
-            for(int columna = 0; columna < columnas; columna++){
-                unsigned char fichaoldtable = ver_ficha(tablero, fila, columna, columnas);
-                colocarfichaindividual(tableronuevo, fila, columna, columnas, fichaoldtable);
-            }
-        }
-        delete[] tablero;
-        tablero = tableronuevo;
-        bytesreservados = bytesnecesariosnewtable;
-    }
-}
-
-
-void eliminarcolumna(unsigned char*& tablero, int filas, int& columnas, int columna_eliminar, int& bytesreservados){
-    int newcolumns = columnas - 1;
-
-
-    for (int fila = 0; fila < filas; fila++){
-        int columnaDestino = 0; // se escribe toda la columna en forma de lineas C0, C1, C2, C3
-        for (int columna = 0; columna < columnas; columna++){
-            if (columna == columna_eliminar){
-                continue;
-            }
-            unsigned char ficha_No_eliminada = ver_ficha(tablero, fila, columna, columnas);
-            colocarfichaindividual(tablero, fila, columnaDestino, newcolumns, ficha_No_eliminada);
-            columnaDestino++;
-        }
-
-        colocarfichaindividual(tablero, fila, columnas - 1, columnas, 6);
-    }
-
-    columnas = newcolumns;
-
-    int bytesnecesariosnewtable = calcularbytesnecesarios(filas, newcolumns);
-    double porcentajeactual = bytesnecesariosnewtable / bytesreservados;
-
-    if (porcentajeactual < 0.65){
-        unsigned char* tableronuevo = creartablero(filas, columnas);
-
-        for (int fila = 0; fila < filas; fila++){
-            for (int columna = 0; columna < columnas; columna++){
-                unsigned char fichaoldtable = ver_ficha(tablero, fila, columna, columnas);
-                colocarfichaindividual(tableronuevo, fila, columna, columnas, fichaoldtable);
-            }
-        }
-        delete[] tablero;
-        tablero = tableronuevo;
-        bytesreservados = bytesnecesariosnewtable;
-    }
-}
-
-void agregarfila(unsigned char*& tablero,int &filas,int columnas,int posicionfilaadd, int& bytesreservados){
-    int newrows = filas + 1;
-    unsigned char* tableronuevo = creartablero(newrows, columnas);
-
-    for(int fila = 0; fila < newrows; fila++){
+    for(size_t fila = 0; fila < filas; fila++){
         if (fila < posicionfilaadd){
             for(int columna = 0; columna < columnas; columna++){
                 unsigned char fichavieja = ver_ficha(tablero, fila, columna, columnas);
@@ -504,69 +460,17 @@ void agregarfila(unsigned char*& tablero,int &filas,int columnas,int posicionfil
     }
     delete[] tablero;
     tablero = tableronuevo;
-    filas = newrows;
-    bytesreservados = calcularbytesnecesarios(newrows, columnas);
-
 }
 
-//#############################################################################################
+//size_t horizontal_scanner() {}
 
-//debugging pendiente
-size_t upper_replace(unsigned char* board, const size_t cols, size_t initial_bit) {
-  size_t initial_byte = initial_bit/8,
-         upper_bit    = initial_bit - (cols*token_size),
-         next_bit     = upper_bit/8,
-         upper_byte   = upper_bit/8;
+//agregar columna
+//
+//comprobacion de combo
+//
+//crear tablero valido
 
-  initial_bit %= 8;
-  upper_bit %= 8;
-
-  unsigned char upper_token = (board[upper_byte] & (and_mask >> upper_bit)) << upper_bit;
-  if (upper_bit > 5) {
-    ++upper_byte;
-    upper_bit -= 5;
-    upper_token ^= (board[upper_byte] & (and_mask << (token_size-upper_bit) )) >> (token_size-upper_bit);
-  }
-
-  board[initial_byte] &= ~(and_mask >> initial_bit);
-  board[initial_byte] ^= upper_token >> initial_bit;
-
-  if (initial_bit > 5) {
-    ++initial_byte;
-    initial_bit -= 5;
-    board[initial_byte] &= ~(and_mask << (token_size-initial_bit));
-    board[initial_byte] ^= upper_token << (token_size-initial_bit);
-  }
-  return next_bit;
-}
-
-
-//debugging pendiente
-void cascaded_fall(unsigned char* board, const size_t cols, size_t bit_index) {
-
-  std::uniform_int_distribution<size_t> dist(0, 5);
-
-  size_t first_row_bits = (cols*token_size);
-  
-  while (bit_index > first_row_bits) {
-    bit_index = upper_replace(board, cols, bit_index);
-  }
-
-  size_t last_byte = bit_index/8;
-  bit_index %= 8;
-
-  unsigned char last_token = token_masks[dist(gen)];
-
-  board[last_byte] &= ~(and_mask >> bit_index);
-  board[last_byte] ^= ( last_token >> bit_index);
-
-  if (bit_index > 5) {
-    ++last_byte;
-    bit_index -= 5;
-    board[last_byte] &= ~(and_mask << (token_size-bit_index));
-    board[last_byte] ^= last_token << (token_size-bit_index);
-  } 
-}
+/*
 
   //para combo horizontal:
   //                       estrategia 2.

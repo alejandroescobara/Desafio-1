@@ -11,6 +11,7 @@ int main() {
     print_title();
 
     size_t rows, columns;
+    unsigned char print_bits = 0;
 
     std::cout << "[ENTER 0 TO EXIT]";
     do {
@@ -25,6 +26,12 @@ int main() {
     
     if (columns == 0) break;
 
+    std::cout << "\n\nDo you want to print the tokens as their bit value? (y/n): ";
+
+    while(invalid_input(print_bits) || (print_bits != 'y' && print_bits != 'n')) {
+      std::cout << "\n\nDo you want to print the tokens as their bit value? (y/n): ";
+    }
+
     size_t used_tokens = rows*columns;
     size_t char_capacity = (( (used_tokens*token_size) + 7)/8);
 
@@ -38,7 +45,9 @@ int main() {
       short selection = 0;
       clear_console();
       print_options();
-      print_board(columns, char_capacity, used_tokens, board);
+      if (print_bits == 'y') print_bit_board(columns, char_capacity, used_tokens, board);
+
+      else print_board(columns, char_capacity, used_tokens, board);
 
       std::cout << "\n\nSelect one of the options from above: ";
       if (invalid_input(selection)) continue;
@@ -50,9 +59,10 @@ int main() {
           continue;
       } 
       
+      if (selection == 6) break;
 
       switch(selection) {
-        case 1:
+        case 1: {
           unsigned short x, y;
           std::cout << "\n\n| DELETE TOKEN |\n\n"
                     << "[Enter the Coordenates of the token] X: ";
@@ -64,18 +74,19 @@ int main() {
             break;
           }
           std::cout << "\n\n                                     Y: ";
-          if (invalid_input(x)) break;
+          if (invalid_input(y)) break;
 
-          if (x < 0 || x > (rows-1)) {
+          if (y < 0 || y > (rows-1)) {
             std::cout << "\n\nERROR: INVALID COORDENATE";
             wait_enter();
             break;
           }
 
-          //cascaded_fall();
+          size_t global_index = ((y*columns) + x)*token_size;
+          cascaded_fall(board, columns, global_index);
 
           break;
-
+        }
         case 2:
           unsigned short deleted_row;
           std::cout << "\n\n| DELETE ROW |\n\n"
@@ -111,8 +122,8 @@ int main() {
           break;
 
         case 4:
-          unsigned short added_row;
-          std::cout << "\n\n| DELETE ROW |\n\n"
+          size_t added_row;
+          std::cout << "\n\n| ADD ROW |\n\n"
                     << "[Enter the Coordenates of the row]: ";
           if (invalid_input(added_row)) break;
 
@@ -122,14 +133,14 @@ int main() {
             break;
           }
 
-          //funcion
-
+          agregarfila(board, rows, columns, added_row, char_capacity);
+          used_tokens = rows*columns;
           break;
 
         case 5:
           unsigned short added_column;
 
-          std::cout << "\n\n| DELETE COLUMN |\n\n"
+          std::cout << "\n\n| ADD COLUMN |\n\n"
                     << "[Enter the Coordenates of the column]: ";
           if (invalid_input(added_column)) break;
           
@@ -138,8 +149,6 @@ int main() {
             wait_enter();
             break;
           }
-
-          //funcion
 
           break;
       }

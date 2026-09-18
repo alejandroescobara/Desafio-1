@@ -15,7 +15,7 @@
 
 constexpr short token_size = 3;
 
-constexpr short option_limit = 5;
+constexpr short option_limit = 6;
 
 constexpr const char *token1 = "₪", *token2 = "▲", *token3 = "☻", *token4 = "☼", *token5 = "♫", *token6 = "♦"; //   INVALID
 //bit representation:          000            001            010            011            100            101         111
@@ -44,7 +44,7 @@ inline void print_title() {
 }
 
 inline void print_options() {
-  std::cout << "| 1. DELETE TOKEN | 2. DELETE ROW | 3. DELETE COLUMN | 4. ADD ROW | 5. ADD COLUMN |\n\n";
+  std::cout << "| 1. DELETE TOKEN | 2. DELETE ROW | 3. DELETE COLUMN | 4. ADD ROW | 5. ADD COLUMN | 6. EXIT |\n\n";
 }
 
 
@@ -73,7 +73,14 @@ inline unsigned char get_token(const unsigned char* board, const size_t index) {
 
 void create_board(const size_t, const size_t, unsigned char*);
 
+void print_token(unsigned char token);
+
+void print_bit_token(unsigned char token);
+
 void print_board(const size_t, const size_t, const size_t, const unsigned char*);
+
+void print_bit_board(const size_t, const size_t, const size_t, const unsigned char*);
+
 
 size_t delete_row(unsigned char*& board, size_t&, const size_t, const unsigned char, size_t& );
 
@@ -85,6 +92,8 @@ unsigned char ver_ficha(unsigned char*, size_t, size_t, size_t);
 void colocarfichaindividual(unsigned char*, size_t, size_t, size_t, unsigned short);
 
 void eliminarcolumna(unsigned char*&, size_t, size_t&, size_t, size_t&);
+
+void agregarfila(unsigned char*&, size_t &, size_t, size_t, size_t&);
 
 
 size_t upper_replace(unsigned char*, const size_t, size_t);
