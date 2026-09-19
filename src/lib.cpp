@@ -3,10 +3,6 @@
 
 #include <ctime>
 
-//#include <bitset>
-//std::cout << std::bitset<8>(token) << std::endl;
-
-
 void create_board(const size_t char_capacity, const size_t used_tokens, unsigned char* board) {
   
   std::uniform_int_distribution<size_t> dist(0, 5);
@@ -462,143 +458,294 @@ void agregarfila(unsigned char*& tablero, size_t &filas, size_t columnas, size_t
     tablero = tableronuevo;
 }
 
-//size_t horizontal_scanner() {}
+void agregarcolumna(unsigned char*& tablero, size_t filas, size_t& columnas, size_t posicion_columnanew, size_t& bytesreservados) {
 
-//agregar columna
-//
-//comprobacion de combo
-//
-//crear tablero valido
+    size_t newcolumns = columnas + 1;
+    unsigned char* tableronuevo = creartablero(filas, newcolumns);
 
-/*
-
-  //para combo horizontal:
-  //                       estrategia 2.
-  //                se recorre hasta la izquierda hasta la ficha mas lejana, horizontal_start pasa a ser el indice global de 
-  //                esa ficha.
-  //                       
-  //                despues, se cuenta cuantas fichas a partir de ella
-  //                son de igual valor consecutivamente, el ciclo termina cuando la siguiente no sea del mismo valor o 
-  //                termine la fila
-  //                si el combo_size es menor a 3, se devuelve 0, si no, se devuelve combo size
-
-
-
-size_t horizontal_scanner(const unsigned char* board,
-                          const size_t cols,
-                          const size_t rows,
-                          size_t& combo_count,
-                          size_t h_start,
-                          const unsigned char original_token) {
-//-------
-
-  const size_t limit = 0; //CAMBIAR
-  size_t aux_index = h_start;
-  size_t bit_iterator = h_start%8;
-
-  
-
-  return h_start;
+    for (size_t fila = 0; fila < filas; fila++) {
+        for (size_t columna = 0; columna < newcolumns; columna++) {
+            if (columna < posicion_columnanew) {
+                unsigned char ficha = ver_ficha(tablero, fila, columna, columnas);
+                colocarfichaindividual(tableronuevo, fila, columna, newcolumns, ficha);
+            }
+            else if (columna == posicion_columnanew) {
+                unsigned char fichaaleatoria = llenarAleatorio();
+                colocarfichaindividual(tableronuevo, fila, columna, newcolumns, fichaaleatoria);
+            }
+            else {
+                unsigned char ficha = ver_ficha(tablero, fila, columna - 1, columnas);
+                colocarfichaindividual(tableronuevo, fila, columna, newcolumns, ficha);
+            }
+        }
+    }
+    delete[] tablero;
+    tablero = tableronuevo;
+    columnas = newcolumns;
+    bytesreservados = calcularbytesnecesarios(filas, newcolumns);
 }
 
-//en proceso
+//########################## COMBO SCANNER |
+
+
+//creo que h_start, almenos cuando no hay combo. queda corrido una casilla, y cuando si, igual.
+size_t horizontal_scanner(const unsigned char* board,
+                          const size_t cols,
+                          size_t global_index,
+                          size_t& combo_count,
+                          const unsigned char original_token) {
+//-------
+   
+  const size_t bits_per_row = cols*token_size;
+
+  const int lower_limit = (global_index/bits_per_row)*(bits_per_row),
+            upper_limit = lower_limit + bits_per_row;
+    
+  int h_start = (global_index-token_size);
+
+  bool same_token = true; 
+
+  char bit_counter = h_start%8;
+  int byte_index  = h_start/8;
+ 
+  unsigned char aux_token = 0;
+
+  //parte que va lo mas a la izquierda <- posible
+  while (h_start >= lower_limit && same_token) {
+
+    aux_token = (board[byte_index] & (and_mask >> bit_counter)) << bit_counter;
+
+    if (bit_counter + token_size > 8) {
+      aux_token ^= ((board[byte_index+1] & (and_mask << (8-bit_counter))) >> (8-bit_counter));
+    }
+    
+    if (aux_token == original_token) {
+      ++combo_count;
+      h_start -= token_size;
+      bit_counter -= token_size;
+      if (bit_counter < 0) {
+        bit_counter += 8;
+        --byte_index;
+      }
+    }
+    else same_token = false;
+  }
+
+  
+  global_index += token_size;
+  bit_counter = global_index%8;
+  byte_index  = global_index/8; 
+  same_token  = true;
+
+  //parte que va lo mas a la derecha posible
+  while (global_index < upper_limit && same_token) {
+    aux_token = (board[byte_index] & (and_mask >> bit_counter )) << bit_counter;
+    bit_counter += token_size; 
+    global_index += token_size;
+    if (bit_counter >= 8) {
+      ++byte_index;
+      bit_counter -= 8;
+      if (bit_counter > 0) {
+        aux_token ^= (board[byte_index] & (and_mask << (token_size-bit_counter))) >> (token_size-bit_counter);
+      }
+    }
+    if (aux_token == original_token) ++combo_count;
+    else same_token = false;
+    aux_token = 0;
+  }
+  if (combo_count < 3) combo_count = 0;
+  return h_start + token_size;
+}
+
 size_t vertical_scanner(const unsigned char* board,
                         const size_t cols,
                         const size_t rows,
                         size_t& combo_count,
-                        size_t v_start,
+                        size_t global_index,
                         const unsigned char original_token) {
 //-------
 
-  return v_start;
+  const size_t row_size = cols * token_size;
+  const size_t upper_limit = cols * rows * token_size;
+
+  int v_start = global_index + row_size;
+
+  bool same_token = true;
+
+  char bit_counter = v_start % 8;
+  int byte_index = v_start / 8;
+
+  unsigned char aux_token = 0;
+
+  // parte que va lo mas abajo posible
+  while (v_start < upper_limit && same_token) {
+
+    aux_token = (board[byte_index] & (and_mask >> bit_counter)) << bit_counter;
+
+    if (bit_counter + token_size > 8) {
+      aux_token ^= ((board[byte_index + 1] &
+                     (and_mask << (8 - bit_counter))) >>
+                    (8 - bit_counter));
+    }
+
+    if (aux_token == original_token) {
+      ++combo_count;
+
+      v_start += row_size;
+      bit_counter = v_start % 8;
+      byte_index = v_start / 8;
+    }
+    else {
+      same_token = false;
+    }
+
+    aux_token = 0;
+  }
+
+
+  // inicializacion de datos para global_index
+
+  v_start = global_index - row_size;
+
+  bit_counter = v_start % 8;
+  byte_index = v_start / 8;
+  same_token = true;
+
+  // parte que va lo mas arriba posible
+  while (v_start >= 0 && same_token) {
+
+    aux_token = (board[byte_index] & (and_mask >> bit_counter)) << bit_counter;
+
+    if (bit_counter + token_size > 8) {
+      aux_token ^= ((board[byte_index + 1] &
+                     (and_mask << (8 - bit_counter))) >>
+                    (8 - bit_counter));
+    }
+
+    if (aux_token == original_token) {
+      ++combo_count;
+
+      v_start -= row_size;
+      if (v_start >= 0) {
+        bit_counter = v_start % 8;
+        byte_index = v_start / 8;
+      }
+    }
+    else {
+      same_token = false;
+    }
+
+    aux_token = 0;
+  }
+
+  if (combo_count < 3)
+    combo_count = 0;
+
+  return v_start + row_size;
 }
 
-//en proceso
-void combo_scanner(unsigned char* board, const size_t cols, const size_t rows, const size_t c_bit_index) {
+bool combo_scanner(unsigned char* board, const size_t cols, const size_t rows, const size_t c_bit_index) {
 
   //unsigned int center_byte = central_bit_index /8;
   //unsigned int center_bit = central_bit_index %8;
 
   size_t h_start          = c_bit_index,
          v_start          = c_bit_index,
-         v_combo_count    = 0,
-         h_combo_count    = 0;
+         v_combo_count    = 1,
+         h_combo_count    = 1;
 
   unsigned char c_token = get_token(board, c_bit_index);
 
-  v_start = vertical_scanner(cols, rows, v_start, v_combo_count, c_token);
+  v_start = vertical_scanner(board, cols, rows, v_combo_count, v_start, c_token);
 
-  h_start = horizontal_scanner(cols, rows, h_start, h_combo_count, c_token);
+  h_start = horizontal_scanner(board, cols, h_start, h_combo_count, c_token);
   
-  if (!(h_combo_count || v_combo_cout)) return;
+  if (!(h_combo_count || v_combo_count)) return 0;
 
-  if (h_combo_count) {
-    if (v_combo_count) --v_combo_count;
-    size_t token_counter = 0;
-    size_t bit_index = horizontal_start;
-    while (token_counter < h_combo_count) {
-      cascaded_fall(board, cols, bit_index);
-      bit_index += 3;
-      ++token_counter;
-    }
-  }
+  const unsigned char delete_token = 0b11000000;
+
+
+  //fichas horizontales -> 0b110
 
   size_t token_counter = 0;
-  while (token_counter < vertical_combo_size) {
-    cascaded_fall(board, cols, vertical_start);
+  size_t bit_index = h_start;
+
+  while (token_counter < h_combo_count) {
+
+    size_t byte_index = bit_index / 8;
+    unsigned char bit_counter = bit_index % 8;
+
+    board[byte_index] &= ~(and_mask >> bit_counter);
+    board[byte_index] ^= (delete_token >> bit_counter);
+
+    bit_counter += token_size;
+
+    if (bit_counter >= 8) {
+      ++byte_index;
+      bit_counter -= 8;
+
+      if (bit_counter > 0) {
+        board[byte_index] &= ~(and_mask << (token_size - bit_counter));
+        board[byte_index] ^= delete_token << (token_size - bit_counter);
+      }
+    }
+
+    bit_index += token_size;
     ++token_counter;
   }
 
-  const size_t scan_limit  = (v_start >= (h_start + (h_combo_count*token_size)))? v_start : 
-                                                                                  h_start + (h_combo_count*token_size);
 
-  for (size_t bit_index = 0; bit_index < scan_limit ; bit_index += 3) {
-    combo_scanner(board, cols, rows, bit_index);
+  //fichas verticales -> 0b110
+
+  token_counter = 0;
+  bit_index = v_start;
+
+  while (token_counter < v_combo_count) {
+
+    size_t byte_index = bit_index / 8;
+    unsigned char bit_counter = bit_index % 8;
+
+    board[byte_index] &= ~(and_mask >> bit_counter);
+    board[byte_index] ^= (delete_token >> bit_counter);
+
+    bit_counter += token_size;
+
+    if (bit_counter >= 8) {
+      ++byte_index;
+      bit_counter -= 8;
+
+      if (bit_counter > 0) {
+        board[byte_index] &= ~(and_mask << (token_size - bit_counter));
+        board[byte_index] ^= delete_token << (token_size - bit_counter);
+      }
+    }
+
+    bit_index += cols * token_size;
+    ++token_counter;
   }
-}
 
+
+  const size_t h_limit = h_start + (h_combo_count * token_size);
   
-  //para combo horizontal:
-  //                       estrategia 2.
-  //                se recorre hasta la izquierda hasta la ficha mas lejana, horizontal_start pasa a ser el indice global de 
-  //                esa ficha.
-  //                       
-  //                despues, se cuenta cuantas fichas a partir de ella
-  //                son de igual valor consecutivamente, el ciclo termina cuando la siguiente no sea del mismo valor o 
-  //                termine la fila
-  //                si el combo_size es menor a 3, se devuelve 0, si no, se devuelve combo size
-  //
-  //para combo vertical:
-  //                       estrategia 2. 
-  //                  se hace vertical_scanner al principio de todo.
-  //
-  //                  desde la posicion original, se va bajando hasta encontrar la ultima ficha del mismo valor, con cuidado
-  //                  de no pasarse mas alla del tablero, el indice de esa ficha pasa a ser vertical_start, a partir de esa posicion
-  //                  se va subiendo a la siguiente fila, contando cuantas fichas con consecutivamente iguales a la original
-  //
-  //                  si el combo_size es menor a 3, se devuelve 0, si no, se devuelve combo size
-  //
-  //despues:               despues, se empieza a hacer combo_scanner recursivamente
-  //
-  //para recursive combo_scanner:
-  //  
-  //                       estrategia 1.
-  //                       se detecta que columnas salieron afectadas, y la maxima profundidad de afectacion, se aplica combo_scanner
-  //                       de arriba hacia abajo en todas las fichas afectadas en un patron de [derecha, abajo, derecha, abajo]
-  //                       se deja de escanear una columna cuando la ficha afectada en ella ya es la mas profunda
-  //
-  //                       estrategia 2. [mas simple]
-  //                  si hubo vertical, se hace combo_scanner hasta ese indice global,
-  //                  si no, se hace hasta horizontal_start + (horizontal_size*token_size)
-  //
+  const size_t v_limit = (v_combo_count == 0)? v_start : v_start + ((v_combo_count - 1) * cols * token_size) + token_size;
+
+  const size_t scan_start = (v_start < h_start) ? v_start : h_start;
+
+  const size_t scan_limit = (v_limit > h_limit) ? v_limit : h_limit;
 
 
-//pendiente
-void create_valid_board() {
+  //buscar cada 0b110 y hacer cascaded_fall
 
+  bit_index = scan_start;
+
+  while (bit_index < scan_limit) {
+
+    if (get_token(board, bit_index) == delete_token) {
+      cascaded_fall(board, cols, bit_index);
+    }
+
+    bit_index += token_size;
+  }
+
+  return 1;
 }
-
-//a la creacion inicial del tablero, se tiene que crear y despues modificar hasta que ya no quede ningun combo de fichas, esa primera funcion de sensado debe de estar
-//incorporada en una funcion grande que contenga combo_scanner y create_board hasta que quede uno valido
-
-*/

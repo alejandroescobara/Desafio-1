@@ -95,13 +95,22 @@ void eliminarcolumna(unsigned char*&, size_t, size_t&, size_t, size_t&);
 
 void agregarfila(unsigned char*&, size_t &, size_t, size_t, size_t&);
 
+void agregarcolumna(unsigned char*&, size_t, size_t&, size_t, size_t&);
+
 
 size_t upper_replace(unsigned char*, const size_t, size_t);
 
 void cascaded_fall(unsigned char*, const size_t, size_t);
 
-size_t horizontal_scanner(const size_t, size_t&);
+size_t horizontal_scanner(const unsigned char*, const size_t, size_t, size_t&, const unsigned char);
 
-size_t vertical_scanner(const size_t, const size_t, size_t&);
+size_t vertical_scanner(const unsigned char*, const size_t, const size_t, size_t&, size_t, const unsigned char);
 
-void combo_scanner(unsigned char*, const size_t, const size_t, const size_t);
+bool combo_scanner(unsigned char*, const size_t, const size_t, const size_t);
+
+
+void caida(unsigned char*, size_t, size_t);
+
+void rellenar(unsigned char* tablero, unsigned short filas, unsigned short columnas);
+
+void procesarCombinaciones(unsigned char*, size_t, size_t);

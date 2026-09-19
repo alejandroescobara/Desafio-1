@@ -42,6 +42,32 @@ int main() {
     create_board(char_capacity, used_tokens, board);
 
     while (true) {
+      //### COMBO SCANNER |
+
+      bool combo_found = true;
+
+      while (combo_found) {
+        combo_found = false;
+        size_t token_counter = 0;
+
+        while (token_counter < used_tokens) {
+
+          const size_t c_bit_index = token_counter * token_size;
+          const unsigned char token = get_token(board, c_bit_index);
+
+          if (token != 0b11000000) {
+            if (combo_scanner(board, columns, rows, c_bit_index)) {
+              combo_found = true;
+              break;
+            }
+          }
+
+          ++token_counter;
+        }
+      }
+
+      //###################
+
       short selection = 0;
       clear_console();
       print_options();
@@ -117,7 +143,6 @@ int main() {
 
           eliminarcolumna(board, rows, columns, deleted_column, char_capacity);
           used_tokens = rows*columns;
-          //funcion
 
           break;
 
@@ -132,7 +157,6 @@ int main() {
             wait_enter();
             break;
           }
-
           agregarfila(board, rows, columns, added_row, char_capacity);
           used_tokens = rows*columns;
           break;
@@ -149,11 +173,11 @@ int main() {
             wait_enter();
             break;
           }
+          agregarcolumna(board, rows, columns, added_column, char_capacity);
+          used_tokens = rows*columns;
 
           break;
       }
-
-      
     }
   }
   return 0;
