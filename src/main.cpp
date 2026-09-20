@@ -5,10 +5,6 @@
 #include "utilities.hpp"
 
 int main() {
-  #ifdef _WIN32
-    system("chcp 65001 > nul"); // Configura UTF-8 en Windows
-    system("color");            // Activa los colores ANSI en Windows
-  #endif
   while (true) {
     clear_console();
     print_title();
@@ -47,7 +43,7 @@ int main() {
     short selection = 0;
 
     while (true) {
-      //### COMBO SCANNER |
+      //### COMBO SCANNER | ciclo de sensado de combos
 
       bool combo_found = true;
 
@@ -73,11 +69,13 @@ int main() {
         }
       }
 
+      //Calculo de puntuacion por combos
       if (cascaded_counter > 0) {
         --cascaded_counter;
         score += 20+(cascaded_counter*30);
       }
 
+      //reinicio de contadores
       if (selection == 0) {
         global_combo_counter = 0;
         del_counter          = 0;
@@ -93,6 +91,7 @@ int main() {
       print_history();
       cascaded_counter = 0;
 
+      //se imprime el tablero en su representacion binaria si se selecciono
       if (print_bits == 'y') print_bit_board(columns, used_tokens, board);
       std::cout << "\n";
       print_board(columns, used_tokens, board);

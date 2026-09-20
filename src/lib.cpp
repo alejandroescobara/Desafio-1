@@ -3,6 +3,11 @@
 
 #include <ctime>
 
+/*
+  El algoritmo iterativo que se utiliza en el recorrido de create board se da a partir de un bit_iterator, que seria equivalente
+  a el offset, contando en que bit comienza cada token, y reiniciandose a un valor inicial cuando excede el byte 
+*/
+
 void create_board(const size_t char_capacity, const size_t used_tokens, unsigned char* board) {
   
   std::uniform_int_distribution<size_t> dist(0, 5);
@@ -97,17 +102,24 @@ void print_bit_token(unsigned char token) {
 
 void print_board(const size_t cols, const size_t used_tokens, const unsigned char* board) {
 
+  //el algoritmo de extraccion de tokens depende de un iterador de bits, que se reinicia al desborde del byte actual
+
   unsigned char bit_iterator = 0, token = 0;
   size_t char_index = 0, token_iterator = 0;
   std::cout << "\n ";
+  //se imprime las coordenadas del eje x
   for (size_t i = 0; i < cols; ++i) {
     std::cout << ' '<< i;
     if (i < 10) std::cout << ' '; 
   }
   std::cout << " X\n\n ";
   
-  size_t row_counter = 0; 
+  size_t row_counter = 0;
+  //se recorre todo el arreglo
   while (token_iterator < used_tokens) {
+
+    //en caso de que el iterador se halla desbordado mas alla del byte, se le resta 8, y se extrae del siguiente byte lo faltante
+    //por medio de una enmascaracion xor
     if (bit_iterator >= 8) {
       ++char_index;
       bit_iterator -= 8;
@@ -122,6 +134,7 @@ void print_board(const size_t cols, const size_t used_tokens, const unsigned cha
         }
       }
     }
+    //proceso principal del algoritmo, extraccion sin tomar en cuenta posible desborde
     if (token_iterator < used_tokens) {
       token = board[char_index] & (and_mask >> bit_iterator);
       token = ((5-bit_iterator < 0)? token << (bit_iterator-5) : token >> (5-bit_iterator));
@@ -148,7 +161,7 @@ void print_bit_board(const size_t cols, const size_t used_tokens, const unsigned
   for (size_t i = 0; i < cols; ++i) std::cout << ' '<< i << "   ";
   std::cout << " X\n\n ";
   
-  size_t row_counter = 0; 
+  size_t row_counter = 0;
   while (token_iterator < used_tokens) {
     if (bit_iterator >= 8) {
       ++char_index;
@@ -181,7 +194,7 @@ void print_bit_board(const size_t cols, const size_t used_tokens, const unsigned
     bit_iterator += 3;
   }
 }
-//debugging pendiente [FALTA VALIDACION DE TAMAÑO PARA EMPEQUEÑECER, PARAMETRO DE CAPACIDAD]
+
 size_t delete_row(unsigned char*& board, size_t& rows, const size_t cols, const unsigned char selected_row, size_t& byte_capacity) {
   
   //  El flujo del algoritmo es: 
@@ -374,6 +387,8 @@ void eliminarcolumna(unsigned char*& tablero, size_t filas, size_t& columnas, si
 }
 
 size_t upper_replace(unsigned char* board, const size_t cols, size_t initial_bit) {
+  //reemplaza la ficha situada en initial_bit por la ficha que esta arriba
+
   size_t initial_byte = initial_bit/8,
          upper_bit    = initial_bit - (cols*token_size),
          next_bit     = upper_bit,
@@ -403,6 +418,9 @@ size_t upper_replace(unsigned char* board, const size_t cols, size_t initial_bit
 
 void cascaded_fall(unsigned char* board, const size_t cols, size_t bit_index) {
 
+  //se encarga de una caida consecutiva con upper_replace, cuando se detecta que se llego a la ultima ficha, se reemplaza por una nueva
+  //aleatoria
+
   std::uniform_int_distribution<size_t> dist(0, 5);
 
   size_t first_row_bits = (cols*token_size);
@@ -411,6 +429,7 @@ void cascaded_fall(unsigned char* board, const size_t cols, size_t bit_index) {
     bit_index = upper_replace(board, cols, bit_index);
   }
 
+  //proceso unico para la primera ficha de la columna, la cual se reemplaza por una aleatoria
   size_t last_byte = bit_index/8;
   bit_index %= 8;
 

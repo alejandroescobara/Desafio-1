@@ -25,6 +25,7 @@ constexpr unsigned char token_masks[] = {  0b0,   0b00100000,   0b01000000,  0b0
 
 constexpr unsigned char and_mask = 0b11100000, invalid = 0b00000111;
 
+//generacion del motor random
 static std::random_device rd;
 static std::mt19937 gen(rd());
 

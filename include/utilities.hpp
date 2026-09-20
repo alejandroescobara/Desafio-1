@@ -1,8 +1,6 @@
 #pragma once
 
-
 #include <cstdlib>
-#include <cassert>
 
 void clear_console();
 
