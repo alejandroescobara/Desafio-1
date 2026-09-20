@@ -41,6 +41,8 @@ int main() {
 
     create_board(char_capacity, used_tokens, board);
 
+    short selection = 0;
+
     while (true) {
       //### COMBO SCANNER |
 
@@ -57,6 +59,7 @@ int main() {
 
           if (token != 0b11000000) {
             if (combo_scanner(board, columns, rows, c_bit_index)) {
+              ++combo_counter;
               combo_found = true;
               break;
             }
@@ -66,20 +69,30 @@ int main() {
         }
       }
 
+      if (selection == 0) {
+        combo_counter        = 0;
+        del_counter          = 0;
+        score                = 0;
+        cascaded_counter     = 0;
+      }
+
       //###################
 
-      short selection = 0;
+      selection = 0;
       clear_console();
       print_options();
-      if (print_bits == 'y') print_bit_board(columns, char_capacity, used_tokens, board);
+      print_history();
+      cascaded_counter = 0;
 
-      else print_board(columns, char_capacity, used_tokens, board);
+      if (print_bits == 'y') print_bit_board(columns, used_tokens, board);
+      std::cout << "\n";
+      print_board(columns, used_tokens, board);
 
       std::cout << "\n\nSelect one of the options from above: ";
       if (invalid_input(selection)) continue;
           
       
-      if ((selection <= 0) || (selection > option_limit)) {
+      if ((selection < 0) || (selection > option_limit)) {
           std::cout << "\n\nERROR: OPTION OUT OF RANGE";
           wait_enter();
           continue;
@@ -110,6 +123,8 @@ int main() {
 
           size_t global_index = ((y*columns) + x)*token_size;
           cascaded_fall(board, columns, global_index);
+          ++del_counter;
+          score += 10;
 
           break;
         }
@@ -126,6 +141,7 @@ int main() {
           }
 
           used_tokens = delete_row(board, rows, columns, deleted_row, char_capacity);
+          ++del_counter;
 
           break;
 
@@ -143,6 +159,7 @@ int main() {
 
           eliminarcolumna(board, rows, columns, deleted_column, char_capacity);
           used_tokens = rows*columns;
+          ++del_counter;
 
           break;
 

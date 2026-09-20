@@ -13,9 +13,9 @@
 #define MAGENTA "\033[35m"
 #define CYAN    "\033[36m"
 
-constexpr short token_size = 3;
+constexpr char token_size = 3;
 
-constexpr short option_limit = 6;
+constexpr char option_limit = 6;
 
 constexpr const char *token1 = "₪", *token2 = "▲", *token3 = "☻", *token4 = "☼", *token5 = "♫", *token6 = "♦"; //   INVALID
 //bit representation:          000            001            010            011            100            101         111
@@ -43,10 +43,19 @@ inline void print_title() {
                                  << "|\n\n\n";
 }
 
+inline size_t combo_counter        = 0,
+              del_counter          = 0,
+              score                = 0,
+              cascaded_counter     = 0;
+
+
 inline void print_options() {
-  std::cout << "| 1. DELETE TOKEN | 2. DELETE ROW | 3. DELETE COLUMN | 4. ADD ROW | 5. ADD COLUMN | 6. EXIT |\n\n";
+  std::cout << "| 0. CLEAR SCORE | 1. DELETE TOKEN | 2. DELETE ROW | 3. DELETE COLUMN | 4. ADD ROW | 5. ADD COLUMN | 6. EXIT |\n\n";
 }
 
+inline void print_history() {
+  std::cout <<"  SCORE [" << score << "] MANUAL DELETIONS [" << del_counter << "] TOTAL COMBOS [" << combo_counter << "] CASCADES [" << cascaded_counter << "]\n\n";
+}
 
 inline unsigned char get_token(const unsigned char* board, const size_t index) {
 
@@ -77,9 +86,9 @@ void print_token(unsigned char token);
 
 void print_bit_token(unsigned char token);
 
-void print_board(const size_t, const size_t, const size_t, const unsigned char*);
+void print_board(const size_t, const size_t, const unsigned char*);
 
-void print_bit_board(const size_t, const size_t, const size_t, const unsigned char*);
+void print_bit_board(const size_t, const size_t, const unsigned char*);
 
 
 size_t delete_row(unsigned char*& board, size_t&, const size_t, const unsigned char, size_t& );
@@ -89,6 +98,9 @@ size_t calcularbytesnecesarios(size_t, size_t);
 
 unsigned char ver_ficha(unsigned char*, size_t, size_t, size_t);
 
+unsigned char ver_ficha(unsigned char*, size_t);
+
+
 void colocarfichaindividual(unsigned char*, size_t, size_t, size_t, unsigned short);
 
 void eliminarcolumna(unsigned char*&, size_t, size_t&, size_t, size_t&);
@@ -97,20 +109,19 @@ void agregarfila(unsigned char*&, size_t &, size_t, size_t, size_t&);
 
 void agregarcolumna(unsigned char*&, size_t, size_t&, size_t, size_t&);
 
+//funciones para eliminar ficha
 
 size_t upper_replace(unsigned char*, const size_t, size_t);
 
 void cascaded_fall(unsigned char*, const size_t, size_t);
 
-size_t horizontal_scanner(const unsigned char*, const size_t, size_t, size_t&, const unsigned char);
+// funciones para escaneo de combos
 
-size_t vertical_scanner(const unsigned char*, const size_t, const size_t, size_t&, size_t, const unsigned char);
+bool horizontal_scanner(const unsigned char*, const size_t, const size_t, int&, size_t&, int&, size_t&, const unsigned char, bool);
+
+bool vertical_scanner(const unsigned char*, const size_t, const size_t, int&, size_t&, int&, size_t&, const unsigned char, bool);
 
 bool combo_scanner(unsigned char*, const size_t, const size_t, const size_t);
 
+//bool test_combo_scanner(unsigned char*, const size_t, const size_t, const size_t);
 
-void caida(unsigned char*, size_t, size_t);
-
-void rellenar(unsigned char* tablero, unsigned short filas, unsigned short columnas);
-
-void procesarCombinaciones(unsigned char*, size_t, size_t);

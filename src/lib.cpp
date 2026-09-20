@@ -2,6 +2,7 @@
 #include "utilities.hpp"
 
 #include <ctime>
+#include <cstdio>
 
 void create_board(const size_t char_capacity, const size_t used_tokens, unsigned char* board) {
   
@@ -95,7 +96,7 @@ void print_bit_token(unsigned char token) {
   }
 }
 
-void print_board(const size_t cols, const size_t char_capacity, const size_t used_tokens, const unsigned char* board) {
+void print_board(const size_t cols, const size_t used_tokens, const unsigned char* board) {
 
   unsigned char bit_iterator = 0, token = 0;
   size_t char_index = 0, token_iterator = 0;
@@ -140,12 +141,12 @@ void print_board(const size_t cols, const size_t char_capacity, const size_t use
 }
 
 
-void print_bit_board(const size_t cols, const size_t char_capacity, const size_t used_tokens, const unsigned char* board) {
+void print_bit_board(const size_t cols, const size_t used_tokens, const unsigned char* board) {
 
   unsigned char bit_iterator = 0, token = 0;
   size_t char_index = 0, token_iterator = 0;
   std::cout << "\n ";
-  for (size_t i = 0; i < cols; ++i) std::cout << ' '<< i << "  ";
+  for (size_t i = 0; i < cols; ++i) std::cout << ' '<< i << "   ";
   std::cout << " X\n\n ";
   
   size_t row_counter = 0; 
@@ -309,6 +310,29 @@ void colocarfichaindividual(unsigned char* tablero, size_t fila, size_t columna,
         entre2bytes = entre2bytes | valor; //prendemos los valores de la ficha mediante un or
         tablero[Byte] = (entre2bytes >> 8);
         tablero[Byte+1] = entre2bytes;
+    }
+}
+
+unsigned char ver_ficha(unsigned char* tablero, size_t c_bit_index){
+
+    size_t Byte = c_bit_index / 8;
+    size_t posicionenelbyte = c_bit_index % 8;
+
+    if (posicionenelbyte <= 5) // cuando la ficha esta en un solo byte
+    {
+        size_t desplazamiento = 8 - posicionenelbyte - 3;
+
+        return (tablero[Byte] >> desplazamiento) & 7;
+    }
+
+    else // cuando la ficha esta en 2 bytes
+    {
+        size_t desplazamiento = 16 - posicionenelbyte - 3;
+
+        unsigned short entre2bytes =
+            (tablero[Byte] << 8) | tablero[Byte + 1];
+
+        return (entre2bytes >> desplazamiento) & 7;
     }
 }
 
@@ -488,23 +512,28 @@ void agregarcolumna(unsigned char*& tablero, size_t filas, size_t& columnas, siz
 //########################## COMBO SCANNER |
 
 
-//creo que h_start, almenos cuando no hay combo. queda corrido una casilla, y cuando si, igual.
-size_t horizontal_scanner(const unsigned char* board,
-                          const size_t cols,
-                          size_t global_index,
-                          size_t& combo_count,
-                          const unsigned char original_token) {
+
+bool horizontal_scanner(const unsigned char* board,
+                        const size_t cols,
+                        const size_t rows,
+                        int& h_start,
+                        size_t& h_combo_count,
+                        int& v_start,
+                        size_t& v_combo_count,
+                        const unsigned char original_token,
+                        bool recursive) {
 //-------
-   
-  const size_t bits_per_row = cols*token_size;
 
-  const int lower_limit = (global_index/bits_per_row)*(bits_per_row),
-            upper_limit = lower_limit + bits_per_row;
-    
-  int h_start = (global_index-token_size);
+  const size_t row_bits = cols*token_size;
 
-  bool same_token = true; 
+  int aux_index = h_start;
+  h_start -= 3;
 
+  const int lower_limit = (aux_index/row_bits)*row_bits,
+            upper_limit = lower_limit + row_bits;
+
+  bool same_token = true;
+ 
   char bit_counter = h_start%8;
   int byte_index  = h_start/8;
  
@@ -520,7 +549,7 @@ size_t horizontal_scanner(const unsigned char* board,
     }
     
     if (aux_token == original_token) {
-      ++combo_count;
+      ++h_combo_count;
       h_start -= token_size;
       bit_counter -= token_size;
       if (bit_counter < 0) {
@@ -530,18 +559,19 @@ size_t horizontal_scanner(const unsigned char* board,
     }
     else same_token = false;
   }
-
   
-  global_index += token_size;
-  bit_counter = global_index%8;
-  byte_index  = global_index/8; 
+  h_start += token_size;
+
+  aux_index += token_size;
+  bit_counter = aux_index%8;
+  byte_index  = aux_index/8; 
   same_token  = true;
 
   //parte que va lo mas a la derecha posible
-  while (global_index < upper_limit && same_token) {
+  while (aux_index < upper_limit && same_token) {
     aux_token = (board[byte_index] & (and_mask >> bit_counter )) << bit_counter;
     bit_counter += token_size; 
-    global_index += token_size;
+    aux_index += token_size;
     if (bit_counter >= 8) {
       ++byte_index;
       bit_counter -= 8;
@@ -549,29 +579,47 @@ size_t horizontal_scanner(const unsigned char* board,
         aux_token ^= (board[byte_index] & (and_mask << (token_size-bit_counter))) >> (token_size-bit_counter);
       }
     }
-    if (aux_token == original_token) ++combo_count;
+    if (aux_token == original_token) ++h_combo_count;
     else same_token = false;
     aux_token = 0;
   }
-  if (combo_count < 3) combo_count = 0;
-  return h_start + token_size;
+
+  if (h_combo_count < 3) {
+    h_combo_count = 0;
+    h_start = 0;
+    return 0;
+  }
+  if (recursive) {
+    for (unsigned int h_combo_element = 0; h_combo_element < h_combo_count; ++h_combo_element) {
+      v_start = h_start + (h_combo_element*token_size);
+      v_combo_count = 1;
+      if (vertical_scanner(board, cols, rows, h_start, h_combo_count, v_start, v_combo_count, original_token, 0)) {
+        break;
+      }
+    }
+  }
+
+  return 1;
 }
 
-size_t vertical_scanner(const unsigned char* board,
-                        const size_t cols,
-                        const size_t rows,
-                        size_t& combo_count,
-                        size_t global_index,
-                        const unsigned char original_token) {
-//-------
+bool vertical_scanner(const unsigned char* board,
+                      const size_t cols,
+                      const size_t rows,
+                      int& h_start,
+                      size_t& h_combo_count,
+                      int& v_start,
+                      size_t& v_combo_count,
+                      const unsigned char original_token,
+                      bool recursive) {
 
-  const size_t row_size = cols * token_size;
-  const size_t upper_limit = cols * rows * token_size;
+  const size_t row_bits = cols*token_size,
+               upper_limit = row_bits * rows;
 
-  int v_start = global_index + row_size;
+  int aux_index = v_start;
+  v_start += row_bits;
 
   bool same_token = true;
-
+ 
   char bit_counter = v_start % 8;
   int byte_index = v_start / 8;
 
@@ -589,23 +637,19 @@ size_t vertical_scanner(const unsigned char* board,
     }
 
     if (aux_token == original_token) {
-      ++combo_count;
+      ++v_combo_count;
 
-      v_start += row_size;
+      v_start += row_bits;
       bit_counter = v_start % 8;
       byte_index = v_start / 8;
     }
     else {
       same_token = false;
     }
-
     aux_token = 0;
   }
 
-
-  // inicializacion de datos para global_index
-
-  v_start = global_index - row_size;
+  v_start = aux_index - row_bits;
 
   bit_counter = v_start % 8;
   byte_index = v_start / 8;
@@ -623,9 +667,9 @@ size_t vertical_scanner(const unsigned char* board,
     }
 
     if (aux_token == original_token) {
-      ++combo_count;
+      ++v_combo_count;
 
-      v_start -= row_size;
+      v_start -= row_bits;
       if (v_start >= 0) {
         bit_counter = v_start % 8;
         byte_index = v_start / 8;
@@ -638,32 +682,42 @@ size_t vertical_scanner(const unsigned char* board,
     aux_token = 0;
   }
 
-  if (combo_count < 3)
-    combo_count = 0;
+  v_start += row_bits;
+  
+  if (v_combo_count < 3) {
+    v_combo_count = 0;
+    v_start = 0;
+    return 0;
+  }
 
-  return v_start + row_size;
+  if (recursive) {
+    for (int v_combo_element = 0; v_combo_element < v_combo_count; ++v_combo_element) {
+      h_start = v_start + (cols*token_size*v_combo_element);
+      h_combo_count = 1;
+      if (horizontal_scanner(board, cols, rows, h_start, h_combo_count, v_start, v_combo_count, original_token, 0)) {
+        break;
+      }
+    }
+  }
+  return 1;
 }
 
 bool combo_scanner(unsigned char* board, const size_t cols, const size_t rows, const size_t c_bit_index) {
 
-  //unsigned int center_byte = central_bit_index /8;
-  //unsigned int center_bit = central_bit_index %8;
-
-  size_t h_start          = c_bit_index,
-         v_start          = c_bit_index,
-         v_combo_count    = 1,
+int      h_start          = c_bit_index,
+         v_start          = c_bit_index;
+size_t   v_combo_count    = 1,
          h_combo_count    = 1;
 
   unsigned char c_token = get_token(board, c_bit_index);
 
-  v_start = vertical_scanner(board, cols, rows, v_combo_count, v_start, c_token);
+  if (!(vertical_scanner(board, cols, rows, h_start, h_combo_count, v_start, v_combo_count, c_token, 1))) {
+    horizontal_scanner(board, cols, rows, h_start, h_combo_count, v_start, v_combo_count, c_token, 1);
+  }
 
-  h_start = horizontal_scanner(board, cols, h_start, h_combo_count, c_token);
-  
-  if (!(h_combo_count || v_combo_count)) return 0;
+  if (h_combo_count == 0 && v_combo_count == 0) return 0;
 
   const unsigned char delete_token = 0b11000000;
-
 
   //fichas horizontales -> 0b110
 
@@ -697,7 +751,8 @@ bool combo_scanner(unsigned char* board, const size_t cols, const size_t rows, c
 
   //fichas verticales -> 0b110
 
-  token_counter = 0;
+  token_counter = 0; 
+
   bit_index = v_start;
 
   while (token_counter < v_combo_count) {
@@ -720,7 +775,7 @@ bool combo_scanner(unsigned char* board, const size_t cols, const size_t rows, c
       }
     }
 
-    bit_index += cols * token_size;
+    bit_index += (cols * token_size);
     ++token_counter;
   }
 
@@ -749,3 +804,5 @@ bool combo_scanner(unsigned char* board, const size_t cols, const size_t rows, c
 
   return 1;
 }
+
+
