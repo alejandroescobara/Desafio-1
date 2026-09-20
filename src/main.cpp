@@ -59,7 +59,8 @@ int main() {
 
           if (token != 0b11000000) {
             if (combo_scanner(board, columns, rows, c_bit_index)) {
-              ++combo_counter;
+              ++global_combo_counter;
+              ++cascaded_counter;
               combo_found = true;
               break;
             }
@@ -69,8 +70,13 @@ int main() {
         }
       }
 
+      if (cascaded_counter > 0) {
+        --cascaded_counter;
+        score += 20+(cascaded_counter*30);
+      }
+
       if (selection == 0) {
-        combo_counter        = 0;
+        global_combo_counter = 0;
         del_counter          = 0;
         score                = 0;
         cascaded_counter     = 0;

@@ -2,7 +2,6 @@
 #include "utilities.hpp"
 
 #include <ctime>
-#include <cstdio>
 
 void create_board(const size_t char_capacity, const size_t used_tokens, unsigned char* board) {
   
