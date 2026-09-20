@@ -17,8 +17,8 @@ constexpr char token_size = 3;
 
 constexpr char option_limit = 6;
 
-constexpr const char *token1 = "₪", *token2 = "▲", *token3 = "☻", *token4 = "☼", *token5 = "♫", *token6 = "♦"; //   INVALID
-//bit representation:          000            001            010            011            100            101         111
+constexpr const char *token1 = "@", *token2 = "#", *token3 = "$", *token4 = "o", *token5 = "+", *token6 = "*"; //    EMPTY
+//bit representation:          000            001            010            011            100            101         110
 
 //                                        token1    token2        token3       token4      token5      token6
 constexpr unsigned char token_masks[] = {  0b0,   0b00100000,   0b01000000,  0b01100000, 0b10000000, 0b10100000 };

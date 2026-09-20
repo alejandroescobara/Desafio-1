@@ -6,6 +6,8 @@
 
 void clear_console();
 
+void configureUTF8();
+
 void wait_enter();
 
 bool invalid_memory_reservation(unsigned char*);

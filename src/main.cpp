@@ -1,14 +1,14 @@
+#include <iostream>
+#include <cstdlib>
+
 #include "lib.hpp"
 #include "utilities.hpp"
 
-#include <iostream>
-
-#ifdef _WIN32
-  #include <windows.h>
-#endif
-
-
 int main() {
+  #ifdef _WIN32
+    system("chcp 65001 > nul"); // Configura UTF-8 en Windows
+    system("color");            // Activa los colores ANSI en Windows
+  #endif
   while (true) {
     clear_console();
     print_title();
