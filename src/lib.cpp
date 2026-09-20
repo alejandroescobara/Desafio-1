@@ -439,10 +439,10 @@ unsigned char* creartablero(int filas, int columnas){
 }
 
 unsigned char llenarAleatorio(){
-    return rand() % 5;
+    return rand() % 6;
 }
 
-void agregarfila(unsigned char*& tablero, size_t &filas, size_t columnas, size_t posicionfilaadd, size_t& bytesreservados){
+void agregarfila(unsigned char*& tablero, size_t &filas, size_t columnas, unsigned short posicionfilaadd, size_t& bytesreservados){
     ++filas;
     bytesreservados = (( (filas*columnas*3) + 7)/8);
 

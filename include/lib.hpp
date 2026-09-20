@@ -105,7 +105,7 @@ void colocarfichaindividual(unsigned char*, size_t, size_t, size_t, unsigned sho
 
 void eliminarcolumna(unsigned char*&, size_t, size_t&, size_t, size_t&);
 
-void agregarfila(unsigned char*&, size_t &, size_t, size_t, size_t&);
+void agregarfila(unsigned char*&, size_t &, size_t, unsigned short, size_t&);
 
 void agregarcolumna(unsigned char*&, size_t, size_t&, size_t, size_t&);
 

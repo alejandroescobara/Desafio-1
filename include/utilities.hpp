@@ -1,33 +1,18 @@
 #pragma once
 
-#include <iostream>
+
+#include <cstdlib>
 #include <cassert>
-#include <type_traits>
 
 void clear_console();
 
 void wait_enter();
 
-template <typename T>
-requires std::is_pointer_v<T>
-bool invalid_memory_reservation(T ptr) {
-  if (ptr == nullptr) {
-    std::cerr << "\n\nERROR: MEMORY RESERVATION FAILED";
-    wait_enter();
-    return true;
-  }
-  return false;
-}
+bool invalid_memory_reservation(unsigned char*);
 
-template <typename T>
-bool invalid_input(T& variable) {
-  if (!(std::cin >> variable && std::cin.peek() == '\n')) {
-    std::cerr << "\n\nERROR: INVALID INPUT";
-    std::cin.clear();
-    wait_enter();  
-    return true;
-  }
-  return false;
-}
+bool invalid_input(short&);
+bool invalid_input(unsigned short&);
+bool invalid_input(unsigned char&);
+bool invalid_input(size_t&);
 
 void resize_cchain(unsigned char*&, const size_t, const size_t);

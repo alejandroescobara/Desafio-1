@@ -3,6 +3,9 @@
 
 #include <iostream>
 
+#ifdef _WIN32
+  #include <windows.h>
+#endif
 
 
 int main() {
@@ -170,7 +173,7 @@ int main() {
           break;
 
         case 4:
-          size_t added_row;
+          unsigned short added_row;
           std::cout << "\n\n| ADD ROW |\n\n"
                     << "[Enter the Coordenates of the row]: ";
           if (invalid_input(added_row)) break;
