@@ -29,34 +29,13 @@ constexpr unsigned char and_mask = 0b11100000, invalid = 0b00000111;
 static std::random_device rd;
 static std::mt19937 gen(rd());
 
-inline void print_title() {
-  std::cout << "  WELCOME TO\n|" << RED BOLD     << 'S' << RESET
-                                 << GREEN BOLD   << 'W' << RESET
-                                 << YELLOW BOLD  << 'E' << RESET 
-                                 << BLUE BOLD    << 'E' << RESET
-                                 << CYAN BOLD    << 'T' << RESET
-                                 << ' '
-                                 << MAGENTA BOLD << 'C' << RESET 
-                                 << RED BOLD     << 'R' << RESET
-                                 << GREEN BOLD   << 'U' << RESET
-                                 << YELLOW BOLD  << 'S' << RESET 
-                                 << BLUE BOLD    << 'H' << RESET
-                                 << "|\n\n\n";
-}
+void print_title();
 
 inline size_t global_combo_counter = 0,
               del_counter          = 0,
               score                = 0,
               cascaded_counter     = 0;
 
-
-inline void print_options() {
-  std::cout << "| 0. CLEAR SCORE | 1. DELETE TOKEN | 2. DELETE ROW | 3. DELETE COLUMN | 4. ADD ROW | 5. ADD COLUMN | 6. EXIT |\n\n";
-}
-
-inline void print_history() {
-  std::cout <<"  SCORE [" << score << "] MANUAL DELETIONS [" << del_counter << "] TOTAL COMBOS [" << global_combo_counter << "] CASCADES [" << cascaded_counter << "]\n\n";
-}
 
 inline unsigned char get_token(const unsigned char* board, const size_t index) {
 

@@ -87,8 +87,10 @@ int main() {
 
       selection = 0;
       clear_console();
-      print_options();
-      print_history();
+      std::cout << "| 0. CLEAR SCORE | 1. DELETE TOKEN | 2. DELETE ROW | 3. DELETE COLUMN | 4. ADD ROW | 5. ADD COLUMN | 6. EXIT |\n\n"
+                <<"  SCORE [" << score << "] MANUAL DELETIONS [" << del_counter << "] TOTAL COMBOS [" 
+                << global_combo_counter << "] CASCADES [" << cascaded_counter << "]\n\n";
+
       cascaded_counter = 0;
 
       //se imprime el tablero en su representacion binaria si se selecciono

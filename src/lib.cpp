@@ -3,6 +3,22 @@
 
 #include <ctime>
 
+void print_title() {
+  std::cout << "  WELCOME TO\n|" << RED BOLD     << 'S' << RESET
+                                 << GREEN BOLD   << 'W' << RESET
+                                 << YELLOW BOLD  << 'E' << RESET 
+                                 << BLUE BOLD    << 'E' << RESET
+                                 << CYAN BOLD    << 'T' << RESET
+                                 << ' '
+                                 << MAGENTA BOLD << 'C' << RESET 
+                                 << RED BOLD     << 'R' << RESET
+                                 << GREEN BOLD   << 'U' << RESET
+                                 << YELLOW BOLD  << 'S' << RESET 
+                                 << BLUE BOLD    << 'H' << RESET
+                                 << "|\n\n\n";
+}
+
+
 /*
   El algoritmo iterativo que se utiliza en el recorrido de create board se da a partir de un bit_iterator, que seria equivalente
   a el offset, contando en que bit comienza cada token, y reiniciandose a un valor inicial cuando excede el byte 
