@@ -61,23 +61,6 @@ void clear_console() {
   #endif
 }
 
-void configureUTF8() {
-  #ifdef _WIN32
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
-
-    // 2. (Opcional) Activar secuencias de escape ANSI si usas colores
-    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (hOut != INVALID_HANDLE_VALUE) {
-      DWORD dwMode = 0;
-      if (GetConsoleMode(hOut, &dwMode)) {
-        dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-        SetConsoleMode(hOut, dwMode);
-      }
-    }  
-  #endif
-}
-
 void wait_enter() {
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   std::cin.get();
